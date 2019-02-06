@@ -22,7 +22,9 @@ public:
 	complex(complex&);
 	complex operator *(complex);
 	complex operator +(complex);
-	double abs();
+	double absolute();
+	//double realnum();
+	//double imaginary();
 	   
 };
 
@@ -50,22 +52,26 @@ complex complex::operator *(complex c) {
 	return k;
 }
 
-double complex::abs() {
-	complex c;
-	return sqrt((c.real*c.real) + (c.imag*c.imag));
+double complex::absolute() {
+	double x = ((this->real*this->real) + (this->imag*this->imag));
+	return std::sqrt(x);
 }
+
+//double complex::realnum(){
+//	return this->real;
+//}
+//
+//double complex::imaginary() {
+//	return this->imag;
+//}
 
 
 
 // Defining default values for window size, shape and location.
-#define INITIAL_WIN_W 800
-#define INITIAL_WIN_H 800
+#define INITIAL_WIN_W 400
+#define INITIAL_WIN_H 400
 #define INITIAL_WIN_X 150
 #define INITIAL_WIN_Y 50
-#define X1 0.262
-#define X2 0.263 
-#define Y1 0.002
-#define Y2 0.003
 
 bool draw = true;
 
@@ -73,41 +79,40 @@ bool draw = true;
 int windowHeight, windowWidth;
 
 
-void mandelbrot()
+void mandelbrot(double x1, double x2, double y1, double y2)
 {
 	glClear(GL_COLOR_BUFFER_BIT); 
 	glBegin(GL_POINTS); // start drawing in single pixel mode
-	double x1 = X1;
-	double x2 = X2;
-	double y1 = Y1;
-	double y2 = Y2;
-	for (int y = 0; y < INITIAL_WIN_H; ++y)
+
+	const int width = glutGet(GLUT_WINDOW_WIDTH);
+	const int height = glutGet(GLUT_WINDOW_HEIGHT);
+	for (int y = 0; y < height; ++y)
 	{
-		for (int x = 0; x < INITIAL_WIN_W; ++x)
+		for (int x = 0; x < width; ++x)
 		{
 			// Work out the point in the complex plane that corresponds to this pixel in the output image.
-			complex c = ((x1 + (x * (x2 - x1) / INITIAL_WIN_W)), (y1 + (y * (y2 - y1) / INITIAL_WIN_H)));
+			complex c = ((x1 + (x * (x2 - x1) / (width-1))), (y1 + (y * (y2 - y1) / (height-1))));
 
 			// Start off z at (0, 0).
 			complex z = (0.0, 0.0);
 
-			// Iterate z = z^2 + c until we've iterated too many times.
+			// Iterate z = z^2 + c until we've iterated too many times or if |z| > 2.
 			int iterations = 0;
-			while (z.abs() < 2 && iterations < 1000)
+			while ((z.absolute() < 2.0) && (iterations < 1000))
 			{
 				z = (z * z) + c;
 
-				iterations++;
+				++iterations;
 
 			}
 			if (iterations == 1000)
 			{
-				glColor3f(1.0, 0.0, 0.0); // Set color to draw mandelbrot
+				glColor3f(1.0, 0.5, 0.0); // Set color to draw mandelbrot
 				// This point is in the Mandelbrot set.
 				glVertex2i(x, y);				
 			}
 			else{
-				glColor3f(1.0, 1.0, 1.0); //Set pixel to black
+				glColor3f(0.0, 0.0, 0.0); //Set pixel to black
 										  // iterations. This point isn't in the set.
 				glVertex2i(x, y);
 			}
@@ -116,6 +121,24 @@ void mandelbrot()
 	glEnd();
 	glFlush();
 
+}
+
+void display()
+{
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	const int width = glutGet(GLUT_WINDOW_WIDTH);
+	const int height = glutGet(GLUT_WINDOW_HEIGHT);
+	glOrtho(0, width, 0, height, -1, 1);
+
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	mandelbrot(0.234, 0.233, 0.002, 0.003);
+	glutSwapBuffers();
 }
 
 
@@ -151,7 +174,7 @@ void reshape(int w, int h)
 //	glutAddMenuEntry("Exit", 2);
 //	glutAttachMenu(GLUT_MIDDLE_BUTTON);
 //}
-//
+////
 //void mainMenu(int item)
 //// Callback for processing main menu.
 //{
@@ -161,6 +184,12 @@ void reshape(int w, int h)
 //	case 2: std::exit(0);
 //	}
 //}
+
+void clearPicture()
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+	glFlush();
+}
 
 const int width = 600, height = 600; // window size
 int windowID;
@@ -196,7 +225,7 @@ int main(int argc, char * argv[])
 	glTranslatef(0.375, 0.375, 0.0);
 
 	// Set the callbacks for the normal screen window.
-	glutDisplayFunc(mandelbrot);
+	glutDisplayFunc(display);
 
 	// Set the callback for reshape events.
 	glutReshapeFunc(reshape);
@@ -206,6 +235,8 @@ int main(int argc, char * argv[])
 
 	// Start the GLUT main loop.
 	glutMainLoop();
+
+	//setMenus();
 
 }
 
