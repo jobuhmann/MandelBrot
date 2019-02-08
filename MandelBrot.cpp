@@ -8,6 +8,7 @@
 #include <GL/glut.h>
 #include <cmath>
 #include <cfloat>
+#include <list>
 #include <iostream>
 
 using namespace std;
@@ -22,10 +23,8 @@ public:
 	complex(complex&);
 	complex operator *(complex);
 	complex operator +(complex);
-	double absolute();
-	//double realnum();
-	//double imaginary();
-	   
+	double abs();
+
 };
 
 complex::complex(double r = 0.0, double im = 0.0) {
@@ -40,8 +39,8 @@ complex::complex(complex &c) {
 
 complex complex::operator +(complex c) {
 	complex k;
-	k.real = this->real + c.real;
-	k.imag = this->imag + c.imag;
+	k.real = real + c.real;
+	k.imag = imag + c.imag;
 	return k;
 }
 
@@ -52,75 +51,141 @@ complex complex::operator *(complex c) {
 	return k;
 }
 
-double complex::absolute() {
-	double x = ((this->real*this->real) + (this->imag*this->imag));
-	return std::sqrt(x);
+double complex::abs() {
+	return sqrt((real*real) + (imag*imag));
 }
-
-//double complex::realnum(){
-//	return this->real;
-//}
-//
-//double complex::imaginary() {
-//	return this->imag;
-//}
 
 
 
 // Defining default values for window size, shape and location.
-#define INITIAL_WIN_W 400
-#define INITIAL_WIN_H 400
+#define INITIAL_WIN_W 700
+#define INITIAL_WIN_H 700
 #define INITIAL_WIN_X 150
 #define INITIAL_WIN_Y 50
 
-bool draw = true;
 
 // Variables for keeping track of the screen window dimensions.
-int windowHeight, windowWidth;
+int windowHeight = INITIAL_WIN_H;
+int windowWidth = INITIAL_WIN_W;
+
+double X1 = -1;
+double X2 = 1;
+double Y1 = -1;
+double Y2 = 1;
+int** table;
 
 
-void mandelbrot(double x1, double x2, double y1, double y2)
+void initTables(int w, int h){
+table = new int*[w];
+for (int i = 0; i < w; i++) table[i] = new int[h];
+}
+
+struct rectangle
 {
-	glClear(GL_COLOR_BUFFER_BIT); 
-	glBegin(GL_POINTS); // start drawing in single pixel mode
+	double xmin;
+	double ymin;
+	double xmax;
+	double ymax;
+	rectangle(double xmn, double ymn, double xmx, double ymx)
+		: xmin(xmn), ymin(ymn), xmax(xmx), ymax(ymx)
+	{}
+};
 
-	const int width = glutGet(GLUT_WINDOW_WIDTH);
-	const int height = glutGet(GLUT_WINDOW_HEIGHT);
-	for (int y = 0; y < height; ++y)
+list<rectangle*> rectList;
+
+
+void mandelbrot()
+{
+	int w = INITIAL_WIN_W;
+	int h = INITIAL_WIN_H;
+	glClear(GL_COLOR_BUFFER_BIT);
+	glBegin(GL_POINTS); // start drawing in single pixel mode
+	double x1 = X1;
+	double x2 = X2;
+	double y1 = Y1;
+	double y2 = Y2;
+	rectList.push_back(new rectangle(x1, y1, x2, y2));
+	for (int y = 0; y < h; ++y)
 	{
-		for (int x = 0; x < width; ++x)
+		for (int x = 0; x < w; ++x)
 		{
 			// Work out the point in the complex plane that corresponds to this pixel in the output image.
-			complex c = ((x1 + (x * (x2 - x1) / (width-1))), (y1 + (y * (y2 - y1) / (height-1))));
+			double xx = x1 + (x * (x2 - x1) / (w - 1));
+			double yy = y1 + (y * (y2 - y1) / (h - 1));
+			complex c(xx, yy);
+			//			cout << "c: " << c.real << " " << c.imag << endl;
+						// Start off z at (0, 0).
+			complex z(0.0, 0.0);
 
-			// Start off z at (0, 0).
-			complex z = (0.0, 0.0);
-
-			// Iterate z = z^2 + c until we've iterated too many times or if |z| > 2.
+			// Iterate z = z^2 + c until we've iterated too many times.
 			int iterations = 0;
-			while ((z.absolute() < 2.0) && (iterations < 1000))
+			while (z.abs() < 2 && iterations < 1000)
 			{
 				z = (z * z) + c;
-
-				++iterations;
-
+				//				cout << "Iteration: " << iterations << "z: " << z.real << " " << z.imag << endl;
+				iterations++;
 			}
 			if (iterations == 1000)
 			{
-				glColor3f(1.0, 0.5, 0.0); // Set color to draw mandelbrot
+				glColor3f(0.0, 0.0, 0.0); // Set color to draw mandelbrot
 				// This point is in the Mandelbrot set.
-				glVertex2i(x, y);				
+				glVertex2i(x, y);
 			}
-			else{
+
+			else if (iterations > 90) {
+				glColor3f(1.0, 1.0, 0.5); //Set pixel to black
+										  // iterations. This point isn't in the set.
+				glVertex2i(x, y);
+			}
+			else if (iterations > 75) {
+				glColor3f(1.0, 0.0, 0.5); //Set pixel to black
+										  // iterations. This point isn't in the set.
+				glVertex2i(x, y);
+			}
+
+			else if (iterations > 50) {
+				glColor3f(1.0, 0.0, 0.0); //Set pixel to black
+										  // iterations. This point isn't in the set.
+				glVertex2i(x, y);
+			}
+			else if (iterations > 25) {
+				glColor3f(0.0, 0.0, 1.0); //Set pixel to black
+										  // iterations. This point isn't in the set.
+				glVertex2i(x, y);
+			}
+			else if (iterations > 1) {
+				glColor3f(0.1, 0.1, 0.1); //Set pixel to black
+										  // iterations. This point isn't in the set.
+				glVertex2i(x, y);
+			}
+			else {
 				glColor3f(0.0, 0.0, 0.0); //Set pixel to black
 										  // iterations. This point isn't in the set.
 				glVertex2i(x, y);
 			}
 		}
 	}
+	cout << "                            done" << endl;
 	glEnd();
 	glFlush();
 
+}
+
+bool push = false;
+
+
+void reshape(int w, int h)
+// Callback for processing reshape events.
+{
+	if (h == 0) {
+		h == 1;
+	}
+	float aspectRatio = (float) (w / h);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glViewport(0, 0, w, h);
+	gluPerspective(45, aspectRatio, 0, 1000);
+	glMatrixMode(GL_MODELVIEW);
 }
 
 void display()
@@ -130,69 +195,22 @@ void display()
 
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	const int width = glutGet(GLUT_WINDOW_WIDTH);
-	const int height = glutGet(GLUT_WINDOW_HEIGHT);
+	const int width = windowWidth;
+	const int height = windowHeight;
 	glOrtho(0, width, 0, height, -1, 1);
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
-	mandelbrot(0.234, 0.233, 0.002, 0.003);
-	glutSwapBuffers();
+	mandelbrot();
+	//glutSwapBuffers();
 }
 
 
-//void mouse(int button, int state, int x, int y)
-//// Function for processing mouse events.
-//{
-//	if (button == GLUT_MIDDLE_BUTTON)
-//		switch (state)
-//		{
-//		
-//		}
-//}
-//
-void reshape(int w, int h)
-// Callback for processing reshape events.
-{
-	windowWidth = w;
-	windowHeight = h;
-	glViewport(0, 0, (GLsizei)w, (GLsizei)h);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluOrtho2D(0.0, (GLdouble)w, 0.0, (GLdouble)h);
-
-}
-//
-//
-//void setMenus()
-//// Function for creating menus.
-//{
-//
-//	glutCreateMenu(mainMenu);
-//	glutAddMenuEntry("Clear", 1);
-//	glutAddMenuEntry("Exit", 2);
-//	glutAttachMenu(GLUT_MIDDLE_BUTTON);
-//}
-////
-//void mainMenu(int item)
-//// Callback for processing main menu.
-//{
-//	switch (item)
-//	{
-//	case 1: clearPicture(); break;
-//	case 2: std::exit(0);
-//	}
-//}
-
-void clearPicture()
-{
-	glClear(GL_COLOR_BUFFER_BIT);
-	glFlush();
-}
-
-const int width = 600, height = 600; // window size
+const int width = 700, height = 700; // window size
+int xAnchor, yAnchor, xStretch, yStretch;
 int windowID;
+bool rubberBanding = false;
 
 void escExit(GLubyte key, int, int)
 // Callback for processing keyboard events.
@@ -200,9 +218,178 @@ void escExit(GLubyte key, int, int)
 	if (key == 27 /* ESC */) std::exit(0);
 }
 
+
+void drawLine(int xOld, int yOld, int xNew, int yNew)
+// Draw a line from (xOld,yOld) to (xNew,yNew).
+{
+	glBegin(GL_LINE_LOOP);
+	glVertex2i(xOld, yOld);
+	glVertex2i(xOld, yNew);
+	glVertex2i(xNew, yNew);
+	glVertex2i(xNew, yOld);
+	glEnd();
+	glFlush();
+}
+
+void drawRubberBand(int xOld, int yOld, int xNew, int yNew)
+{
+	glColor3f(1.0, 1.0, 1.0);
+	glEnable(GL_COLOR_LOGIC_OP);
+	glLogicOp(GL_XOR);
+	glBegin(GL_LINE_LOOP);
+	glVertex2i(xOld, yOld);
+	glVertex2i(xOld, yNew);
+	glVertex2i(xNew, yNew);
+	glVertex2i(xNew, yOld);
+	glEnd();
+	glDisable(GL_COLOR_LOGIC_OP);
+	glFlush();
+}
+
+void rubberBand(int x, int y)
+// Callback for processing mouse motion.
+{
+	if (push = true) {
+
+
+		if (rubberBanding)
+		{
+			drawRubberBand(xAnchor, yAnchor, xStretch, yStretch);
+
+			y = windowHeight - y;
+			xStretch = x;
+			yStretch = y;
+			drawRubberBand(xAnchor, yAnchor, xStretch, yStretch);
+			glFlush();
+		}
+	}
+}
+
+void processLeftDown(int x, int y)
+// Function for processing mouse left botton down events.
+{
+	if (push = true) {
+
+		if (!rubberBanding)
+		{
+			int xNew = x;
+			int yNew = windowHeight - y;
+			xAnchor = xNew;
+			yAnchor = yNew;
+			xStretch = xNew;
+			yStretch = yNew;
+			drawRubberBand(xAnchor, yAnchor, xStretch, yStretch);
+			rubberBanding = true;
+		}
+	}
+}
+
+
+
+void processLeftUp(int x, int y)
+// Function for processing mouse left botton up events.
+{
+	if (rubberBanding)
+	{
+		int xNew, yNew;
+		drawRubberBand(xAnchor, yAnchor, xStretch, yStretch);
+		rubberBanding = false;
+		xNew = x;
+		yNew = y;
+		xStretch = xNew;
+		yStretch = yNew;
+
+		double xd = abs(xStretch - xAnchor);
+		double yd = abs(yStretch - yAnchor);
+		double ar = yd / xd;
+		double aw = windowHeight / windowWidth;
+
+		if (ar > aw) {
+			double z = abs(xd - (yd*windowWidth / windowHeight));
+			xStretch = xStretch + (z / 2);
+			xAnchor = xAnchor - (z / 2);
+			ar = yd / xd;
+		}
+
+		if (ar < aw) {
+			double z = abs(((xd*(windowHeight)) / windowWidth) - yd);
+			yStretch = yStretch + (z / 2);
+			yAnchor = yAnchor - (z / 2);
+			ar = yd / xd;
+		}
+
+
+		
+		double zxAnchor = X1 + (xAnchor * (X2 - X1) / (windowWidth - 1));
+		double zyAnchor = Y1 + (yAnchor * (Y2 - Y1) / (windowHeight - 1));
+		double zxStretch = X1 + (xStretch * (X2 - X1) / (windowWidth - 1));
+		double zyStretch = Y1 + (yStretch * (Y2 - Y1) / (windowHeight - 1));
+		X1 = zxAnchor;
+		Y1 = zyAnchor;
+		X2 = zxStretch;
+		Y2 = zyStretch;
+		
+		//Save new point  in stretch
+		//convert anchor and stretch into (x1,y1) (x2,y2)
+		glutPostRedisplay();
+	}
+}
+
+
+void mouse(int button, int state, int x, int y)
+// Function for processing mouse events.
+{
+	if (push = true) {
+		if (button == GLUT_LEFT_BUTTON)
+			switch (state)
+			{
+			case GLUT_DOWN: processLeftDown(x, y); break;
+			case GLUT_UP: processLeftUp(x, y); break;
+			}
+	}
+}
+
+void clearPicture()
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+	glFlush();
+}
+
+//void push() {
+//	if (button == GLUT_LEFT_BUTTON)
+//
+//}
+//
+
+
+
+void mainMenu(int item)
+// Callback for processing main menu.
+{
+	switch (item)
+	{
+	case 1: push = true; break;
+	case 2: 
+	case 3: std::exit(0);
+	}
+}
+//
+//
+//
+void setMenus()
+// Function for creating menus.
+{
+
+
+	glutCreateMenu(mainMenu);
+	glutAddMenuEntry("Push", 1);
+	glutAddMenuEntry("Exit", 2);
+	glutAttachMenu(GLUT_RIGHT_BUTTON);
+}
+
 int main(int argc, char * argv[])
 {
-	
+
 	// Mask floating point exceptions.
 	_control87(MCW_EM, MCW_EM);
 
@@ -233,10 +420,15 @@ int main(int argc, char * argv[])
 	// Set the callback for keyboard events.
 	glutKeyboardFunc(escExit);
 
+	glutMouseFunc(mouse);
+
+	glutMotionFunc(rubberBand);
+	glutPassiveMotionFunc(rubberBand);
+	setMenus();
+
+
 	// Start the GLUT main loop.
 	glutMainLoop();
-
-	//setMenus();
 
 }
 
@@ -244,236 +436,4 @@ int main(int argc, char * argv[])
 
 
 
-// RUBBER BAND
 
-//// Variable for use in rubberbanding.
-//int xAnchor, yAnchor, xStretch, yStretch;
-//bool rubberBanding = false;
-//
-
-//
-//void drawLine(int xOld, int yOld, int xNew, int yNew)
-//// Draw a line from (xOld,yOld) to (xNew,yNew).
-//{
-//	glBegin(GL_LINES);
-//	glVertex2i(xOld, yOld);
-//	glVertex2i(xNew, yNew);
-//	glEnd();
-//	glFlush();
-//}
-//
-//
-//
-//void drawRubberBand(int xA, int yA, int xS, int yS)
-//{
-//	glEnable(GL_COLOR_LOGIC_OP);
-//	glLogicOp(GL_XOR);
-//	glBegin(GL_LINES);
-//	glVertex2i(xA, yA);
-//	glVertex2i(xS, yS);
-//	glEnd();
-//	glDisable(GL_COLOR_LOGIC_OP);
-//	glFlush();
-//}
-//
-//void rubberBand(int x, int y)
-//// Callback for processing mouse motion.
-//{
-//	if (rubberBanding)
-//	{
-//		drawRubberBand(xAnchor, yAnchor, xStretch, yStretch);
-//		y = windowHeight - y;
-//		xStretch = x;
-//		yStretch = y;
-//		drawRubberBand(xAnchor, yAnchor, xStretch, yStretch);
-//		glFlush();
-//	}
-//}
-//
-
-//
-//void processLeftDown(int x, int y)
-//// Function for processing mouse left botton down events.
-//{
-//	if (!rubberBanding)
-//	{
-//		int xNew = x;
-//		int yNew = windowHeight - y;
-//		xAnchor = xNew;
-//		yAnchor = yNew;
-//		xStretch = xNew;
-//		yStretch = yNew;
-//		drawRubberBand(xAnchor, yAnchor, xStretch, yStretch);
-//		rubberBanding = true;
-//	}
-//}
-//
-//
-//
-//void processLeftUp(int x, int y)
-//// Function for processing mouse left botton up events.
-//{
-//	if (rubberBanding)
-//	{
-//		int xNew, yNew;
-//		drawRubberBand(xAnchor, yAnchor, xStretch, yStretch);
-//		rubberBanding = false;
-//		xNew = x;
-//		yNew = windowHeight - y;
-//		drawLine(xAnchor, yAnchor, xNew, yNew);
-//		glFlush();
-//	}
-//}
-//
-//
-//void mouse(int button, int state, int x, int y)
-//// Function for processing mouse events.
-//{
-//	if (button == GLUT_LEFT_BUTTON)
-//		switch (state)
-//		{
-//		case GLUT_DOWN: processLeftDown(x, y); break;
-//		case GLUT_UP: processLeftUp(x, y); break;
-//		}
-//}
-//
-//
-//
-
-// HOUSE
-
-//void drawHouse()
-//{
-//	// Clear the window.
-//	glClear(GL_COLOR_BUFFER_BIT);
-//
-//	// Draw the base of the house.
-//	glBegin(GL_LINE_LOOP);
-//	glVertex2i(200, 200);
-//	glVertex2i(200, 500);
-//	glVertex2i(500, 500);
-//	glVertex2i(500, 200);
-//	glEnd();
-//
-//	// Draw the roof of the house.
-//	glBegin(GL_LINE_STRIP);
-//	glVertex2i(200, 500);
-//	glVertex2i(350, 630);
-//	glVertex2i(500, 500);
-//	glEnd();
-//
-//	// Draw the door of the house.
-//	glBegin(GL_POINTS);
-//	for (int i = 0; i < 125; i++) glVertex2i(320, 200 + i);
-//	for (int i = 0; i < 60; i++) glVertex2i(320 + i, 325);
-//	for (int i = 0; i < 125; i++) glVertex2i(380, 200 + i);
-//	glEnd();
-//
-//	// Draw the antenna on the house.
-//	glBegin(GL_LINES);
-//	glVertex2i(200, 500);  glVertex2i(200, 600);
-//	glVertex2i(175, 600);  glVertex2i(225, 600);
-//	glVertex2i(175, 575);  glVertex2i(225, 575);
-//	glVertex2i(175, 550);  glVertex2i(225, 550);
-//	glEnd();
-//
-//	// Draw the base of the garage.
-//	glBegin(GL_LINE_LOOP);
-//	glVertex2i(500, 200);
-//	glVertex2i(500, 350);
-//	glVertex2i(650, 350);
-//	glVertex2i(650, 200);
-//	glEnd();
-//
-//	// Draw the roof of the garage.
-//	glBegin(GL_LINE_STRIP);
-//	glVertex2i(500, 350);
-//	glVertex2i(575, 425);
-//	glVertex2i(650, 350);
-//	glEnd();
-//
-//	// Set polygon fill/line mode. 
-//	// Forward facing polygons are filled. 
-//	// Backward facing polygons are outlined. 
-//	glPolygonMode(GL_FRONT, GL_FILL);
-//	glPolygonMode(GL_BACK, GL_LINE);
-//
-//	// Draw the windows of the house.
-//	// Generate vertices clockwise: Polygon faces backward.
-//	glBegin(GL_POLYGON);
-//	glVertex2i(225, 375);
-//	glVertex2i(225, 475);
-//	glVertex2i(325, 475);
-//	glVertex2i(325, 375);
-//	glEnd();
-//	// Generate vertices counter-clockwise: Polygon faces forward.
-//	glBegin(GL_POLYGON);
-//	glVertex2i(375, 375);
-//	glVertex2i(475, 375);
-//	glVertex2i(475, 475);
-//	glVertex2i(375, 475);
-//	glEnd();
-//
-//	glFlush();
-//}
-//
-//void reshape(int w, int h)
-//// Callback for processing reshape events.
-//{
-//	glViewport(0, 0, w, h);
-//	glMatrixMode(GL_PROJECTION);
-//	glLoadIdentity();
-//	gluOrtho2D(0.0, w, 0.0, h);
-//}
-//
-//
-//void escExit(GLubyte key, int, int)
-//// Callback for processing keyboard events.
-//{
-//	if (key == 27 /* ESC */) std::exit(0);
-//}
-//
-//
-//
-//int main()
-//{
-//	// Mask floating point exceptions.
-//	_control87(MCW_EM, MCW_EM);
-//
-//	// Choose RGB display mode for normal screen window.
-//	glutInitDisplayMode(GLUT_RGB);
-//
-//	// Set initial window size, position, and title.
-//	glutInitWindowSize(INITIAL_WIN_W, INITIAL_WIN_H);
-//	glutInitWindowPosition(INITIAL_WIN_X, INITIAL_WIN_Y);
-//	glutCreateWindow("American Dream House");
-//
-//	// You don't (yet) want to know what this does.
-//	glMatrixMode(GL_PROJECTION);
-//	glLoadIdentity();
-//	gluOrtho2D(0.0, (double)INITIAL_WIN_W, 0.0, (double)INITIAL_WIN_H);
-//	glMatrixMode(GL_MODELVIEW);
-//	glLoadIdentity();
-//
-//	// This is a hack.
-//	glTranslatef(0.375, 0.375, 0.0);
-//
-//	// Set the color for clearing the normal screen window.
-//	glClearColor(1.0, 1.0, 1.0, 0.0);
-//
-//	// Set the color for drawing the house.
-//	glColor3f(0.0, 0.0, 1.0);
-//
-//	// Set the callbacks for the normal screen window.
-//	glutDisplayFunc(drawHouse);
-//
-//	// Set the callback for reshape events.
-//	glutReshapeFunc(reshape);
-//
-//	// Set the callback for keyboard events.
-//	glutKeyboardFunc(escExit);
-//
-//	// Start the GLUT main loop.
-//	glutMainLoop();
-//
-//}
