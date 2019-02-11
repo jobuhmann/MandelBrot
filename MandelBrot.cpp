@@ -10,11 +10,21 @@
 #include <cfloat>
 #include <list>
 #include <iostream>
+#include <math.h>
 
 using namespace std;
 
+//Creating parameters for the mandelbrot set. Use the default values below to see my entry for the art contest. 
+//(X1= 0.3515, X2 = 0.3525, Y1 = 0.372, Y2 = 0.373)
+double X1 = 0.3515;
+double X2 = 0.3525;
+double Y1 = 0.372;
+double Y2 = 0.373;
+//int** table;
+
 class complex
 {
+	//Creating a class of complex numbers
 public:
 	double real;
 	double imag;
@@ -68,18 +78,13 @@ double complex::abs() {
 int windowHeight = INITIAL_WIN_H;
 int windowWidth = INITIAL_WIN_W;
 
-double X1 = -1;
-double X2 = 1;
-double Y1 = -1;
-double Y2 = 1;
-int** table;
 
+//void initTables(int w, int h){
+//table = new int*[w];
+//for (int i = 0; i < w; i++) table[i] = new int[h];
+//}
 
-void initTables(int w, int h){
-table = new int*[w];
-for (int i = 0; i < w; i++) table[i] = new int[h];
-}
-
+//Creating a rectangle structure in order to store the values for the rectangle vertices
 struct rectangle
 {
 	double xmin;
@@ -91,13 +96,16 @@ struct rectangle
 	{}
 };
 
+//Declaring variables for the rectangle list and the rectangle iterator
 list<rectangle*> rectList;
+list<rectangle*>::iterator rectListIter;
 
 
+//The method to create the mandelbrot set
 void mandelbrot()
 {
-	int w = INITIAL_WIN_W;
-	int h = INITIAL_WIN_H;
+	int w = windowWidth;
+	int h = windowHeight;
 	glClear(GL_COLOR_BUFFER_BIT);
 	glBegin(GL_POINTS); // start drawing in single pixel mode
 	double x1 = X1;
@@ -105,6 +113,7 @@ void mandelbrot()
 	double y1 = Y1;
 	double y2 = Y2;
 	rectList.push_back(new rectangle(x1, y1, x2, y2));
+	rectListIter = rectList.begin();
 	for (int y = 0; y < h; ++y)
 	{
 		for (int x = 0; x < w; ++x)
@@ -133,29 +142,23 @@ void mandelbrot()
 			}
 
 			else if (iterations > 90) {
-				glColor3f(1.0, 1.0, 0.5); //Set pixel to black
-										  // iterations. This point isn't in the set.
+				glColor3f(1.0, 0.5, 0.0); 
 				glVertex2i(x, y);
 			}
 			else if (iterations > 75) {
-				glColor3f(1.0, 0.0, 0.5); //Set pixel to black
-										  // iterations. This point isn't in the set.
+				glColor3f(0.0, 0.0, 0.8); 
 				glVertex2i(x, y);
 			}
-
 			else if (iterations > 50) {
-				glColor3f(1.0, 0.0, 0.0); //Set pixel to black
-										  // iterations. This point isn't in the set.
+				glColor3f(0.0, 0.0, 0.6);
 				glVertex2i(x, y);
 			}
 			else if (iterations > 25) {
-				glColor3f(0.0, 0.0, 1.0); //Set pixel to black
-										  // iterations. This point isn't in the set.
+				glColor3f(0.0, 0.0, 0.4); 
 				glVertex2i(x, y);
 			}
 			else if (iterations > 1) {
-				glColor3f(0.1, 0.1, 0.1); //Set pixel to black
-										  // iterations. This point isn't in the set.
+				glColor3f(0.0, 0.0, 0.2); 
 				glVertex2i(x, y);
 			}
 			else {
@@ -171,6 +174,7 @@ void mandelbrot()
 
 }
 
+//If the push menu is selected, push will be turned true
 bool push = false;
 
 
@@ -186,8 +190,12 @@ void reshape(int w, int h)
 	glViewport(0, 0, w, h);
 	gluPerspective(45, aspectRatio, 0, 1000);
 	glMatrixMode(GL_MODELVIEW);
+	glutPostRedisplay;
+	windowWidth = w;
+	windowHeight = h;
 }
 
+//Display method, calls mandelbrot
 void display()
 {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -206,31 +214,20 @@ void display()
 	//glutSwapBuffers();
 }
 
-
+// Global variables for rubberbanding
 const int width = 700, height = 700; // window size
 int xAnchor, yAnchor, xStretch, yStretch;
 int windowID;
 bool rubberBanding = false;
 
+//Escape method
 void escExit(GLubyte key, int, int)
 // Callback for processing keyboard events.
 {
 	if (key == 27 /* ESC */) std::exit(0);
 }
 
-
-void drawLine(int xOld, int yOld, int xNew, int yNew)
-// Draw a line from (xOld,yOld) to (xNew,yNew).
-{
-	glBegin(GL_LINE_LOOP);
-	glVertex2i(xOld, yOld);
-	glVertex2i(xOld, yNew);
-	glVertex2i(xNew, yNew);
-	glVertex2i(xNew, yOld);
-	glEnd();
-	glFlush();
-}
-
+// method for drawing the rubberband aftering selecting the push method.
 void drawRubberBand(int xOld, int yOld, int xNew, int yNew)
 {
 	glColor3f(1.0, 1.0, 1.0);
@@ -246,13 +243,12 @@ void drawRubberBand(int xOld, int yOld, int xNew, int yNew)
 	glFlush();
 }
 
+//Method for glutPassiveMotion to call in order to create a rubberband
 void rubberBand(int x, int y)
 // Callback for processing mouse motion.
 {
-	if (push = true) {
 
-
-		if (rubberBanding)
+		if (push && rubberBanding)
 		{
 			drawRubberBand(xAnchor, yAnchor, xStretch, yStretch);
 
@@ -262,15 +258,14 @@ void rubberBand(int x, int y)
 			drawRubberBand(xAnchor, yAnchor, xStretch, yStretch);
 			glFlush();
 		}
-	}
 }
 
+//The method for when the left button is clicked down
 void processLeftDown(int x, int y)
 // Function for processing mouse left botton down events.
 {
-	if (push = true) {
 
-		if (!rubberBanding)
+		if (!rubberBanding && push)
 		{
 			int xNew = x;
 			int yNew = windowHeight - y;
@@ -281,95 +276,149 @@ void processLeftDown(int x, int y)
 			drawRubberBand(xAnchor, yAnchor, xStretch, yStretch);
 			rubberBanding = true;
 		}
-	}
 }
 
 
-
+// The method for when the left button is released, which causes the program to zoom into 
+// the spot that was outlined by the rectangle.
 void processLeftUp(int x, int y)
 // Function for processing mouse left botton up events.
 {
 	if (rubberBanding)
 	{
-		int xNew, yNew;
+		double xNew, yNew;
 		drawRubberBand(xAnchor, yAnchor, xStretch, yStretch);
 		rubberBanding = false;
 		xNew = x;
-		yNew = y;
+		yNew = windowHeight - y;
 		xStretch = xNew;
 		yStretch = yNew;
 
-		double xd = abs(xStretch - xAnchor);
-		double yd = abs(yStretch - yAnchor);
+		if (xStretch < xAnchor) {
+			xStretch = xAnchor;
+			xAnchor = xNew;
+		}
+
+		if (yStretch < yAnchor) {
+			yStretch = yAnchor;
+			yAnchor = yNew;
+		}
+
+		double xd = std::abs(xStretch -xAnchor);
+		double yd = std::abs(yStretch -yAnchor);
+		double z1 = std::abs(xd - (yd*windowWidth/windowHeight));
+		double z2 = abs(((xd*(windowHeight)) / windowWidth) - yd);
 		double ar = yd / xd;
 		double aw = windowHeight / windowWidth;
 
 		if (ar > aw) {
-			double z = abs(xd - (yd*windowWidth / windowHeight));
-			xStretch = xStretch + (z / 2);
-			xAnchor = xAnchor - (z / 2);
-			ar = yd / xd;
+			xStretch = xStretch + (z1 / 2);
+			xAnchor = xAnchor - (z1 / 2);
+			ar = yd / std::abs(xStretch - xAnchor);
+			double zxAnchor = X1 + (xAnchor * (X2 - X1) / (windowWidth - 1));
+			double zyAnchor = Y1 + (yAnchor * (Y2 - Y1) / (windowHeight - 1));
+			double zxStretch = X1 + (xStretch * (X2 - X1) / (windowWidth - 1));
+			double zyStretch = Y1 + (yStretch * (Y2 - Y1) / (windowHeight - 1));
+			X1 = zxAnchor;
+			Y1 = zyAnchor;
+			X2 = zxStretch;
+			Y2 = zyStretch;
 		}
 
-		if (ar < aw) {
-			double z = abs(((xd*(windowHeight)) / windowWidth) - yd);
-			yStretch = yStretch + (z / 2);
-			yAnchor = yAnchor - (z / 2);
-			ar = yd / xd;
+		else if (ar < aw) {
+			yStretch = yStretch + (z2 / 2);
+			yAnchor = yAnchor - (z2 / 2);
+			ar = std::abs(yStretch - yAnchor) / xd;
+			double zxAnchor = X1 + (xAnchor * (X2 - X1) / (windowWidth - 1));
+			double zyAnchor = Y1 + (yAnchor * (Y2 - Y1) / (windowHeight - 1));
+			double zxStretch = X1 + (xStretch * (X2 - X1) / (windowWidth - 1));
+			double zyStretch = Y1 + (yStretch * (Y2 - Y1) / (windowHeight - 1));
+			X1 = zxAnchor;
+			Y1 = zyAnchor;
+			X2 = zxStretch;
+			Y2 = zyStretch;
 		}
 
+		else {
 
-		
-		double zxAnchor = X1 + (xAnchor * (X2 - X1) / (windowWidth - 1));
-		double zyAnchor = Y1 + (yAnchor * (Y2 - Y1) / (windowHeight - 1));
-		double zxStretch = X1 + (xStretch * (X2 - X1) / (windowWidth - 1));
-		double zyStretch = Y1 + (yStretch * (Y2 - Y1) / (windowHeight - 1));
-		X1 = zxAnchor;
-		Y1 = zyAnchor;
-		X2 = zxStretch;
-		Y2 = zyStretch;
+			double zxAnchor = X1 + (xAnchor * (X2 - X1) / (windowWidth - 1));
+			double zyAnchor = Y1 + (yAnchor * (Y2 - Y1) / (windowHeight - 1));
+			double zxStretch = X1 + (xStretch * (X2 - X1) / (windowWidth - 1));
+			double zyStretch = Y1 + (yStretch * (Y2 - Y1) / (windowHeight - 1));
+			X1 = zxAnchor;
+			Y1 = zyAnchor;
+			X2 = zxStretch;
+			Y2 = zyStretch;
+		}
 		
 		//Save new point  in stretch
 		//convert anchor and stretch into (x1,y1) (x2,y2)
 		glutPostRedisplay();
+
+		push = false;
+
 	}
 }
 
-
+//Method for different mouse functions
 void mouse(int button, int state, int x, int y)
 // Function for processing mouse events.
 {
-	if (push = true) {
-		if (button == GLUT_LEFT_BUTTON)
+		if (push && button == GLUT_LEFT_BUTTON)
 			switch (state)
 			{
 			case GLUT_DOWN: processLeftDown(x, y); break;
 			case GLUT_UP: processLeftUp(x, y); break;
 			}
-	}
 }
 
+//Method to clear the screen
 void clearPicture()
 {
 	glClear(GL_COLOR_BUFFER_BIT);
 	glFlush();
 }
 
-//void push() {
-//	if (button == GLUT_LEFT_BUTTON)
-//
-//}
-//
+//Method to allow the program to zoom back out to the previous rectangle
+void pop() {
+	auto one_before_end = rectList.end();
+	std::advance(one_before_end, -1);
+	while (rectListIter != one_before_end) {
+		rectListIter++;
+	}
+
+	if (rectListIter == rectList.begin()) {
+		cout << "                            Already Zoomed Out" << endl;
+	}
+	else {
+		rectListIter--;
+		rectangle* rectPointer = *rectListIter;
+		double xmin = rectPointer->xmin;
+		double xmax = rectPointer->xmax;
+		double ymin = rectPointer->ymin;
+		double ymax = rectPointer->ymax;
+
+		rectList.erase(rectListIter, rectList.end());
+
+		X1 = xmin;
+		X2 = xmax;
+		Y1 = ymin;
+		Y2 = ymax;
+
+		glutPostRedisplay();
+	}
+}
 
 
 
+// Methods to create the menu when the right mouse button is clicked
 void mainMenu(int item)
 // Callback for processing main menu.
 {
 	switch (item)
 	{
 	case 1: push = true; break;
-	case 2: 
+	case 2: pop(); break;
 	case 3: std::exit(0);
 	}
 }
@@ -383,10 +432,12 @@ void setMenus()
 
 	glutCreateMenu(mainMenu);
 	glutAddMenuEntry("Push", 1);
-	glutAddMenuEntry("Exit", 2);
+	glutAddMenuEntry("Pop", 2);
+	glutAddMenuEntry("Exit", 3);
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
+//main method
 int main(int argc, char * argv[])
 {
 
@@ -407,6 +458,7 @@ int main(int argc, char * argv[])
 	gluOrtho2D(0.0, (double)INITIAL_WIN_W, 0.0, (double)INITIAL_WIN_H);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+
 
 	// This is a hack.
 	glTranslatef(0.375, 0.375, 0.0);
